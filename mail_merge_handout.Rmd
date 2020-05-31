@@ -1,0 +1,141 @@
+---
+title: 儿童三年发展报告
+output: html_document
+---
+
+```{r echo=FALSE, message=FALSE}
+#加载需要的包，其中ggalt是用曲线拟合各个点，见第一第二部分
+#ggrepel包是为了在第三部分标注散点图上的红点
+library(dplyr)
+library(ggplot2)
+library(ggalt)
+library(ggrepel)
+
+# 这部分数据是为了测试后续代码是否有误
+# 在实际生成报告中这行代码在.R中生成
+personalized_info <- read.csv(file = "info.csv",header = T,sep = ",")
+i <- 38
+```
+
+
+```{r echo=FALSE}
+# 在文档头指明该份文件的对象是谁
+# 单独测试时要在.Rmd中生成personalized_info
+kinder <- personalized_info$kinder[i]
+class <- personalized_info$class[i]
+name <- personalized_info$name[i]
+```
+
+亲爱的**`r name`**家长:
+
+&emsp;&emsp;您好，以下是基于您孩子过去三年的测评数据所得到的发展报告，请您查阅：
+
+### 第一部分 幼儿自信心的发展变化：
+
+&emsp;&emsp;下图为过去三年幼儿自信心的变化曲线：
+
+```{r echo = F}
+seq <- c(1:5) #创造一个横坐标，后面用scale_x_continuous更改
+se <- as.numeric(select(filter(personalized_info, id == i),SE1:SE5)) #生成纵坐标
+df <- data.frame(seq = seq, se = se)
+
+
+ggplot(df,aes(seq,se)) + 
+  geom_point(color = 'black', size = 2) +
+  geom_xspline(aes(linetype = "实际曲线")) + 
+  geom_smooth(aes(linetype = "模拟曲线"), formula = y ~ x, method = "lm", se = F, colour = "black") +
+  labs(
+    x = "测量时间点",
+    y = "自信心水平"
+  ) +
+  scale_linetype_manual(name = "曲线类型",values = c("实际曲线" = 1, "模拟曲线" = 3)) + 
+  scale_x_continuous(
+    breaks = c(1,2,3,4,5),
+    labels = c("2016.12","2017.06","2017.12","2018.06","2018.12")
+  ) +
+  ylim(0,6)
+
+```
+
+&emsp;&emsp;`r personalized_info$FEEDBACK_SE[i]`
+
+### 第二部分 家长教养方式
+
+&emsp;&emsp;下图为过去三年家长教养方式的变化曲线：
+
+```{r echo=F}
+# 同上
+seq <- c(1:5)
+aut <- as.numeric(select(filter(personalized_info, id == i),AUT1:AUT5))
+df <- data.frame(seq = seq, aut = aut)
+
+ggplot(df,aes(seq,aut)) + 
+  geom_point(color = 'black', size = 2) +
+  geom_xspline(aes(linetype = "实际曲线")) + 
+  geom_smooth(aes(linetype = "模拟曲线"), formula = y ~ x, method = "lm", se = F, colour = "black") +
+  labs(
+    x = "测量时间点",
+    y = "民主教养方式"
+  ) +
+  scale_linetype_manual(name = "曲线类型",values = c("实际曲线" = 1, "模拟曲线" = 3)) + 
+  scale_x_continuous(
+    breaks = c(1,2,3,4,5),
+    labels = c("2016.12","2017.06","2017.12","2018.06","2018.12")
+  ) + 
+  ylim(0,6)
+```
+
+&emsp;&emsp;`r personalized_info$FEEDBACK_AUT[i]`
+
+### 第三部分 教养方式与幼儿自信心发展的关系
+
+&emsp;&emsp;下图以小班上学期的家长教养方式和大班上学期幼儿自信心为例，探讨前期家长工作对幼儿自信心的影响：
+
+```{r echo=F, message=F, warning=F}
+
+#生成目标点的位置，储存在label中，且带上文字说明“您所在位置”
+aut <- personalized_info %>%
+  filter(id == i) %>%
+  select(AUT1) %>%
+  as.numeric()
+se <- personalized_info %>%
+  filter(id == i) %>%
+  select(SE5) %>%
+  as.numeric()
+label <- data.frame(aut = aut, se = se, label = "您所在位置")
+
+#与上一个数据框的作用相似，但此处是为了用红点标注位置
+target <- personalized_info %>%
+  filter(id == i) %>%
+  select(AUT1, SE5) %>%
+  rename(aut1 = AUT1, se5 = SE5)
+
+# 散点图的数据基地
+all <- personalized_info %>%
+  select(AUT1, SE5, "性别") %>%
+  rename(aut1 = AUT1, se5 = SE5, gender = "性别")
+
+ggplot(all, aes(x = aut1, y = se5)) + 
+  geom_point(data = all, alpha = 1/5, size = 0.5) +
+  geom_smooth(aes(linetype = "模拟曲线"), formula = y ~ x, method = "lm", col = "black") +
+  geom_hline(aes(yintercept = median(all$se5), linetype = "中间值"), col = "black") +
+  geom_vline(aes(xintercept = median(all$aut1)), linetype = 3, col = "black") +
+  scale_linetype_manual(name = "曲线类型",values = c("模拟曲线" = 1,"中间值" = 3)) + 
+  scale_x_continuous(
+    breaks = c(min(all$aut1) + 0.5*sd(all$aut1), median(all$aut1), max(all$aut1) - 0.5*sd(all$aut1)),
+    labels = c("低权威型教养","中等水平","高权威教养")
+  ) +
+  labs(
+    x = "家长权威教养方式",
+    y = "幼儿自信心",
+    caption = "图中的点为本次调查的1000多名对象"
+  ) +
+  geom_label_repel(data = label, aes(x = aut, y = se, label = label),size = 4, angle = 60) +
+  geom_point(data = target, size = 3, col = "red") +
+  ylim(0,6)
+
+```
+
+&emsp;&emsp;`r personalized_info$FEEDBACK_RELATION[i]`
+
+
