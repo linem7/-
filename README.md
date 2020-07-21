@@ -9,6 +9,6 @@ tidyverse一整套
 
 最后就是我是在别人https://github.com/matt-dray/mail-merge-2018 folk过来的，这种文件叫mail_merge，代码写得比我好看。感谢救了我。
 # 大概效果是下面这样子
-![image](https://github.com/linem7/Development-report/blob/master/images/0001.jpg)
-![image](https://github.com/linem7/Development-report/blob/master/images/0002.jpg)
-![image](https://github.com/linem7/Development-report/blob/master/images/0003.jpg)
+![image](https://github.com/linem7/Development-report/blob/master/images/1.png)
+![image](https://github.com/linem7/Development-report/blob/master/images/2.png)
+![image](https://github.com/linem7/Development-report/blob/master/images/3.png)
